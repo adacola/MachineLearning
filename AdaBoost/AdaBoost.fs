@@ -31,7 +31,7 @@ let evaluate trainingDatum weakHypothesises =
     /// 標本に対する重みの次の値を求める
     let getNextDistributions hypothesis weight trainingDatum distributions =
         let denormalizedNextDistributions =
-            List.zip trainingDatum distributions |> List.map (fun ((data, Label label), distribution) ->
+            (trainingDatum, distributions) ||> List.map2 (fun (data, Label label) distribution ->
                 label * Label.ToInt (hypothesis.Evaluate data) |> float |> (*) -weight |> exp |> (*) distribution)
         let normalizationFactor = denormalizedNextDistributions |> List.sum
         denormalizedNextDistributions |> List.map (fun nextDistribution -> nextDistribution / normalizationFactor)
