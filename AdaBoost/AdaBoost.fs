@@ -8,9 +8,8 @@ type Label = private Label of int with
 let (|Label|) = Label.ToInt
 
 /// 分類器
-type Hypothesis<'id, 'example when 'id : equality> = {
-    /// 分類器のID
-    ID : 'id
+[<ReferenceEquality>]
+type Hypothesis<'example> = {
     /// 事象からラベルを求める関数
     Evaluate : 'example -> Label
 }
@@ -46,7 +45,7 @@ let evaluate trainingDatum weakHypothesises =
             | bestHypothesis, error ->
                 let weight = getWeightOfHypothesis error
                 let nextDistributions = getNextDistributions bestHypothesis weight trainingDatum distributions
-                let nextHypothesises = hypothesises |> List.filter (fun hypothesis -> hypothesis.ID <> bestHypothesis.ID)
+                let nextHypothesises = hypothesises |> List.filter ((<>) bestHypothesis)
                 Some((bestHypothesis, weight), (nextDistributions, nextHypothesises)))
         |> Seq.toList
 
