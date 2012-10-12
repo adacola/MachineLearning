@@ -14,15 +14,21 @@ type Hypothesis<'example> = {
     Evaluate : 'example -> Label
 }
 
+open FSharp.Control
+
 /// 教師データと弱分類器のリストから仮説を生成し、検証データを評価する
 let evaluate trainingDatum weakHypothesises =
+    /// 教師データの件数
+    let trainingDatumCount = trainingDatum |> List.length
+
     /// 弱分類器のリストから最良の弱分類器とそのエラー率を抽出する
     let getBestHypothesis trainingDatum distributions =
         let getError trainingDatum distributions hypothesis =
-            List.zip trainingDatum distributions
-            |> List.sumBy (fun ((data, Label label), distribution) ->
+            Seq.zip trainingDatum distributions
+            |> Seq.sumBy (fun ((data, Label label), distribution) ->
                 (Label.ToInt (hypothesis.Evaluate data) - label) / 2 |> abs |> float |> (*) distribution)
-        List.map (fun hypothesis -> hypothesis, getError trainingDatum distributions hypothesis) >> List.minBy snd
+        AsyncSeq.ofSeq >> AsyncSeq.mapAsync (fun hypothesis -> async { return hypothesis, getError trainingDatum distributions hypothesis })
+        >> AsyncSeq.toBlockingSeq >> Seq.minBy snd
 
     /// 弱分類器のエラー率から、その弱分類器に対する重みを求める
     let getWeightOfHypothesis error = (1.0 - error) / error |> log |> (*) 0.5
@@ -30,22 +36,23 @@ let evaluate trainingDatum weakHypothesises =
     /// 標本に対する重みの次の値を求める
     let getNextDistributions hypothesis weight trainingDatum distributions =
         let denormalizedNextDistributions =
-            (trainingDatum, distributions) ||> List.map2 (fun (data, Label label) distribution ->
-                label * Label.ToInt (hypothesis.Evaluate data) |> float |> (*) -weight |> exp |> (*) distribution)
-        let normalizationFactor = denormalizedNextDistributions |> List.sum
-        denormalizedNextDistributions |> List.map (fun nextDistribution -> nextDistribution / normalizationFactor)
+            (AsyncSeq.ofSeq trainingDatum, AsyncSeq.ofSeq distributions) ||> AsyncSeq.zip
+            |> AsyncSeq.mapAsync (fun ((data, Label label), distribution) ->
+                async { return label * Label.ToInt (hypothesis.Evaluate data) |> float |> (*) -weight |> exp |> (*) distribution })
+        let normalizationFactor = denormalizedNextDistributions |> AsyncSeq.toBlockingSeq |> Seq.sum
+        denormalizedNextDistributions |> AsyncSeq.mapAsync (fun nextDistribution -> async { return nextDistribution / normalizationFactor })
+        |> AsyncSeq.toBlockingSeq
     
     /// 訓練データから、有効な弱分類器とその重みのリストを求める
     let chooseHypothesises trainingDatum hypothesises =
-        let trainingDatumCount = trainingDatum |> List.length
-        let initialDistributions = List.replicate trainingDatumCount (1.0 / float trainingDatumCount)
+        let initialDistributions = seq { for _ in 1 .. trainingDatumCount -> 1.0 / float trainingDatumCount }
         (initialDistributions, hypothesises) |> Seq.unfold (fun (distributions, hypothesises) ->
             match getBestHypothesis trainingDatum distributions hypothesises with
             | _, error when error >= 0.5 -> None
             | bestHypothesis, error ->
                 let weight = getWeightOfHypothesis error
                 let nextDistributions = getNextDistributions bestHypothesis weight trainingDatum distributions
-                let nextHypothesises = hypothesises |> List.filter ((<>) bestHypothesis)
+                let nextHypothesises = hypothesises |> Seq.filter ((<>) bestHypothesis)
                 Some((bestHypothesis, weight), (nextDistributions, nextHypothesises)))
         |> Seq.toList
 
