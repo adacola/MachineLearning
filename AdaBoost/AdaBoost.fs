@@ -8,10 +8,24 @@ type Label = private Label of int with
     static member IsPositive = function Label 1 -> true | _ -> false
 let (|Label|) = Label.ToInt
 
+/// 分類器
+type Classifier<'example> = {
+    /// 分類器の名前
+    Name : string
+    /// 事例からラベルを求める関数
+    Classify : 'example -> Label
+} with
+    override this.ToString() = this.Name
+
 open FSharp.Control
 
-/// 弱分類器と訓練データから仮説を生成し、検証データを評価する
-let evaluate weakClassifiers trainingDatum =
+/// <summary>
+/// 弱分類器と訓練データから仮説を生成する
+/// </summary>
+/// <param name="weakClassifiers">弱分類器のリスト</param>
+/// <param name="trainingDatum">訓練データのリスト</param>
+/// <return>(仮説, (仮説を構成する弱分類器, 重み)の重要な順から並べたリスト)</return>
+let setUp weakClassifiers trainingDatum =
     /// 弱分類器のリストから最良の弱分類器とそのエラー率を抽出する
     let getBestClassifier trainingDatum distributions =
         /// 期待するラベルと弱分類器の結果のラベルが異なっている場合は1を、等しい場合は0を返す
@@ -19,7 +33,7 @@ let evaluate weakClassifiers trainingDatum =
         /// 弱分類器の重み付けされたエラー率を求める
         let getTotalError trainingDatum distributions classifier =
             Seq.zip trainingDatum distributions
-            |> Seq.sumBy (fun ((data, label), distribution) -> classifier data |> isError label |> float |> (*) distribution)
+            |> Seq.sumBy (fun ((data, label), distribution) -> data |> classifier.Classify |> isError label |> float |> (*) distribution)
         AsyncSeq.mapAsync (fun classifier -> async { return classifier, getTotalError trainingDatum distributions classifier })
         >> AsyncSeq.toBlockingSeq >> Seq.minBy snd
 
@@ -32,7 +46,7 @@ let evaluate weakClassifiers trainingDatum =
         let denormalizedNextDistributions =
             (AsyncSeq.ofSeq trainingDatum, AsyncSeq.ofSeq distributions) ||> AsyncSeq.zip
             |> AsyncSeq.mapAsync (fun ((data, Label label), distribution) ->
-                async { return label * Label.ToInt (classifier data) |> float |> (*) -weight |> exp |> (*) distribution })
+                async { return label * Label.ToInt (classifier.Classify data) |> float |> (*) -weight |> exp |> (*) distribution })
         /// 重みを正規化するための除数
         let normalizationFactor = denormalizedNextDistributions |> AsyncSeq.toBlockingSeq |> Seq.sum
         // 正規化された重みの次のリストを求める
@@ -58,8 +72,13 @@ let evaluate weakClassifiers trainingDatum =
     /// 弱分類器の並列処理用シーケンス
     let weakClassifiers = weakClassifiers |> List.toSeq |> AsyncSeq.ofSeq
 
-    // 仮説を返す
-    fun queryData ->
-        chooseClassifiers trainingDatum weakClassifiers |> List.sumBy (fun (classifier, weight) ->
-            classifier queryData |> Label.ToInt |> float |> (*) weight)
+    /// 弱分類器と対応する重みのリスト
+    let chosenClassifiers = chooseClassifiers trainingDatum weakClassifiers
+
+    // 仮説
+    let hypothesis queryData =
+        chosenClassifiers |> List.sumBy (fun (classifier, weight) ->
+            queryData |> classifier.Classify |> Label.ToInt |> float |> (*) weight)
         |> sign |> Label.CreateFromSign (Label.Create 1)
+
+    hypothesis, chosenClassifiers
