@@ -48,12 +48,14 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AdaBoost.fs" />
     <None Include="App.config" />
     <None Include="packages.config" />
+    <Compile Include="AdaBoost.fs" />
+    <Compile Include="AdaBoostTest.fs" />
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
