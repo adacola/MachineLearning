@@ -6,6 +6,7 @@ type Label = private Label of int with
     static member CreateFromSign labelIfZero = function 0 -> labelIfZero | value -> Label.Create value
     static member ToInt = function Label x -> x
     static member IsPositive = function Label 1 -> true | _ -> false
+    static member FromBool = function true -> Label 1 | false -> Label -1
 let (|Label|) = Label.ToInt
 
 /// 分類器
