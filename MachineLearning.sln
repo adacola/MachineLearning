@@ -10,6 +10,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{2CE723
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MachineLearningCommon", "MachineLearningCommon\MachineLearningCommon.fsproj", "{48B99A4B-4E63-41B3-88FD-8892E0580C5B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,6 +22,10 @@ Global
 		{1D4C56CF-D8E1-4E4A-A4C3-93E47FBD7974}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1D4C56CF-D8E1-4E4A-A4C3-93E47FBD7974}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1D4C56CF-D8E1-4E4A-A4C3-93E47FBD7974}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48B99A4B-4E63-41B3-88FD-8892E0580C5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48B99A4B-4E63-41B3-88FD-8892E0580C5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48B99A4B-4E63-41B3-88FD-8892E0580C5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48B99A4B-4E63-41B3-88FD-8892E0580C5B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

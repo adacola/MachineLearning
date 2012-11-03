@@ -1,4 +1,6 @@
-﻿module AdaBoost.Test
+﻿module MachineLearning.Test
+
+open MachineLearning.Core
 
 let distanceSquare (x1, y1)  (x2, y2) = pown (x1 - x2) 2 + pown (y1 - y2) 2
 
@@ -56,7 +58,6 @@ let getDistanceClassifiers max = seq {
         { Name = sprintf "distance to points.[%d] < %d" i r
           Classify = fun { DistancesToCircle = d } -> d.[i] < float r |> Label.FromBool } }
 
-let getCosineClassifiers point1 point2 = seq {
+let cosineClassifiers = seq {
     for t in -1. .. 0.01 .. 1. ->
-        { Name = sprintf "cos θ < %f" t
-          Classify = fun { Cosine = c } -> c < t |> Label.FromBool } }
+        { Name = sprintf "cos θ < %f" t; Classify = fun { Cosine = c } -> c < t |> Label.FromBool } }
